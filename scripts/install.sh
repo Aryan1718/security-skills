@@ -36,7 +36,7 @@ if [ -n "${0:-}" ] && [ -f "$0" ]; then
   source_dir="$repo_dir/skills"
 fi
 
-platform="claude"
+platform=""
 scope="user"
 dest_dir=""
 skill_name=""
@@ -97,6 +97,27 @@ case "$scope" in
   user|project) ;;
   *) die "--scope must be user or project" ;;
 esac
+
+if [ -z "$platform" ]; then
+  if [ -e /dev/tty ] && [ -r /dev/tty ]; then
+    printf '\nWhich platform are you using?\n'
+    printf '  1) Claude Code (default)\n'
+    printf '  2) Codex / Agent Skills\n'
+    printf '  3) Cursor\n'
+    printf 'Enter choice [1]: '
+    choice=""
+    { read choice < /dev/tty; } 2>/dev/null || true
+    case "$choice" in
+      ""|1) platform="claude" ;;
+      2) platform="agents" ;;
+      3) platform="cursor" ;;
+      *) die "invalid choice: $choice" ;;
+    esac
+    printf '\n'
+  else
+    platform="claude"
+  fi
+fi
 
 case "$platform" in
   claude|agents|cursor) ;;

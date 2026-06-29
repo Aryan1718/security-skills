@@ -27,12 +27,17 @@ die() {
   exit 1
 }
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-repo_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
+script_dir=""
+repo_dir=""
+source_dir=""
+if [ -n "${0:-}" ] && [ -f "$0" ]; then
+  script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+  repo_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
+  source_dir="$repo_dir/skills"
+fi
 
 platform="claude"
 scope="user"
-source_dir="$repo_dir/skills"
 dest_dir=""
 skill_name=""
 force="false"
@@ -116,6 +121,45 @@ if [ -z "$dest_dir" ]; then
     else
       dest_dir="$(pwd)/.agents/skills"
     fi
+  fi
+fi
+
+TMP_DIR=""
+cleanup() {
+  if [ -n "${TMP_DIR:-}" ] && [ -d "${TMP_DIR}" ]; then
+    rm -rf "${TMP_DIR}"
+  fi
+}
+trap cleanup EXIT INT TERM
+
+if [ -z "$source_dir" ] || [ ! -d "$source_dir" ]; then
+  if command -v mktemp >/dev/null 2>&1; then
+    TMP_DIR=$(mktemp -d -t security-skills-install.XXXXXX)
+  else
+    TMP_DIR="/tmp/security-skills-install.$$-$(date +%s)"
+    mkdir -p "$TMP_DIR"
+  fi
+
+  printf 'Skills directory not found locally. Bootstrapping from GitHub...\n'
+
+  if command -v git >/dev/null 2>&1; then
+    printf 'Cloning security-skills repository...\n'
+    git clone --depth 1 https://github.com/mindfortai/security-skills.git "$TMP_DIR/repo" >/dev/null 2>&1 || die "failed to clone repository"
+    source_dir="$TMP_DIR/repo/skills"
+  elif command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
+    printf 'Downloading security-skills archive...\n'
+    curl -sSL https://github.com/mindfortai/security-skills/tarball/main -o "$TMP_DIR/archive.tar.gz" || die "failed to download archive"
+    mkdir -p "$TMP_DIR/repo"
+    tar -xzf "$TMP_DIR/archive.tar.gz" -C "$TMP_DIR/repo" --strip-components=1 || die "failed to extract archive"
+    source_dir="$TMP_DIR/repo/skills"
+  elif command -v wget >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
+    printf 'Downloading security-skills archive...\n'
+    wget -qO "$TMP_DIR/archive.tar.gz" https://github.com/mindfortai/security-skills/tarball/main || die "failed to download archive"
+    mkdir -p "$TMP_DIR/repo"
+    tar -xzf "$TMP_DIR/archive.tar.gz" -C "$TMP_DIR/repo" --strip-components=1 || die "failed to extract archive"
+    source_dir="$TMP_DIR/repo/skills"
+  else
+    die "git, curl, or wget is required to bootstrap installation"
   fi
 fi
 

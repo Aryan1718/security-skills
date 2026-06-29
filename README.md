@@ -27,6 +27,25 @@ Every skill is intentionally simple to invoke: install the skill, ask your codin
 
 The emphasis is the same as MindFort's platform: real vulnerabilities, useful evidence, low noise, and practical remediation.
 
+## Quick Install
+
+**One-liner:**
+
+```sh
+curl -fsSL https://mindfort.ai/security-skills/install.sh | sh
+```
+
+**Safer (review first):**
+
+```sh
+git clone https://github.com/mindfortai/security-skills.git
+cd security-skills
+./scripts/install.sh --dry-run  # preview what will be installed
+./scripts/install.sh            # install for your user
+```
+
+Both methods install all skills to `~/.claude/skills/` by default. Use `--platform`, `--scope`, and `--skill` flags to customize (see below).
+
 ## Install
 
 Preview first:
@@ -254,7 +273,7 @@ These skills are instructions and optional local resources. Treat every change a
 - Do not include offensive payload catalogs, persistence logic, credential theft workflows, or third-party exploitation instructions.
 - Review diffs before installing updates.
 
-Avoid curl-pipe-shell as the primary install path for cybersecurity skills. It trains users to execute remote code before reviewing it.
+Both `curl | sh` and `git clone` install paths are supported. For cybersecurity skills, we recommend reviewing the install script before running it. Use `--dry-run` to preview what will be installed.
 
 ## Ongoing Updates
 
